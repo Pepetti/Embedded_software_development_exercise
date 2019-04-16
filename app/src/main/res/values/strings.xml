@@ -7,7 +7,19 @@
     <string name="textOn">Text on</string>
     <string name="textOff">Text off</string>
 
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="connecting_cwp">Hello blank fragment</string>
+    <string name="title_activity_settings">Settings</string>
+
+    <!-- Strings related to Settings -->
+
+    <!-- Example General settings -->
+    <string name="pref_header_general">General</string>
+
+
+    <string name="Server_address">Server address</string>
+    <string name="Frequency">Frequency</string>
+    <string name="pref_default_display_name"></string>
+
+
 
 </resources>

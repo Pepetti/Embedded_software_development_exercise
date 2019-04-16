@@ -1,5 +1,6 @@
 package esde2019029.tol.oulu.fi;
 
+import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 
@@ -77,6 +78,8 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
+            Intent intentObject = new Intent(this, SettingsActivity.class);
+            startActivity(intentObject);
             return true;
         }
 
