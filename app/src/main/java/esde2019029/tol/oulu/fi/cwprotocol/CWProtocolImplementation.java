@@ -13,6 +13,8 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     CWPConnectionReader cwpConnectionReader;
     public static final int DEFAULT_FREQUENCY = -1;
 
+    CWProtocolListener listener;
+
 
     public enum CWPState {Disconnected, Connected, LineUp, LineDown};
     private volatile CWPState currentState = CWPState.Disconnected;
@@ -21,11 +23,17 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         return currentState;
     }
 
+
+
     private CWPState nextState = currentState;
     private int currentFrequency = DEFAULT_FREQUENCY;
     private CWPConnectionReader connection = null;
     private Handler receiveHandler = new Handler();
     private int messageValue = 0;
+
+    public CWProtocolImplementation(CWProtocolListener listener_p){
+        listener = listener_p;
+    }
 
     @Override
     public void addObserver(Observer observer) {
@@ -174,6 +182,9 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         switch(nextState){
             case Connected:
                 Log.d(null, "State change to Connected happening..");
+                currentState = nextState;
+                listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
+                break;
             case Disconnected:
                 Log.d(null, "State change to Disconnected happening...");
             case LineDown:

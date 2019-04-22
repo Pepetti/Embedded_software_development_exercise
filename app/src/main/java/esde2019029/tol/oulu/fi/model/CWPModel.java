@@ -9,7 +9,7 @@ import esde2019029.tol.oulu.fi.cwprotocol.CWPMessaging;
 import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolImplementation;
 
 public class CWPModel extends Observable implements CWPMessaging, CWPControl {
-    CWProtocolImplementation cwProtocolImplementation;
+    cwProtocolImplementation CWProtocolImplementation;
 
     @Override
     public void connect(String serverAddr, int serverPort, int frequency) throws IOException {
