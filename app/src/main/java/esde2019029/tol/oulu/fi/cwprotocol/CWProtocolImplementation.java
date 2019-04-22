@@ -1,6 +1,7 @@
 package esde2019029.tol.oulu.fi.cwprotocol;
 
 import android.os.Handler;
+import android.util.Log;
 
 import java.io.IOException;
 import java.util.Observer;
@@ -169,5 +170,16 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     }
 
-    
+    public void run(){
+        switch(nextState){
+            case Connected:
+                Log.d(null, "State change to Connected happening..");
+            case Disconnected:
+                Log.d(null, "State change to Disconnected happening...");
+            case LineDown:
+                Log.d(null, "State change to LineDown happening...");
+            case LineUp:
+                Log.d(null, "State change to LineUp happening..");
+        }
+    }
 }
