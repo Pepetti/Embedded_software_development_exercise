@@ -187,10 +187,19 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                 break;
             case Disconnected:
                 Log.d(null, "State change to Disconnected happening...");
+                currentState = nextState;
+                listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, 0);
+                break;
             case LineDown:
                 Log.d(null, "State change to LineDown happening...");
+                currentState = nextState;
+                listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
+                break;
             case LineUp:
                 Log.d(null, "State change to LineUp happening..");
+                currentState = nextState;
+                listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, 0);
+                break;
         }
     }
 }

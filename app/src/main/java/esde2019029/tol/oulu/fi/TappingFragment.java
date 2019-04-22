@@ -15,6 +15,7 @@ import java.util.Observer;
 
 import esde2019029.tol.oulu.fi.cwprotocol.CWPMessaging;
 import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolImplementation;
+import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolListener;
 import esde2019029.tol.oulu.fi.model.CWPModel;
 
 
@@ -89,7 +90,7 @@ public class TappingFragment extends Fragment implements Observer {
     @Override
     public void update (Observable obs, Object arg){
 
-        if (arg == CWProtocolImplementation.CWPState.LineUp) {
+        if (arg == CWProtocolListener.CWPEvent.ELineUp) {
             hall9000_offline.setImageResource(R.mipmap.hal9000_up);
             try {
                 cwpMessaging.lineUp();
@@ -97,7 +98,7 @@ public class TappingFragment extends Fragment implements Observer {
                 e.printStackTrace();
             }
         }
-        if (arg == CWProtocolImplementation.CWPState.LineDown){
+        if (arg == CWProtocolListener.CWPEvent.ELineDown){
             hall9000_offline.setImageResource(R.mipmap.hal9000_down);
             try {
                 cwpMessaging.lineDown();

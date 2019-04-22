@@ -7,9 +7,10 @@ import java.util.Observer;
 import esde2019029.tol.oulu.fi.cwprotocol.CWPControl;
 import esde2019029.tol.oulu.fi.cwprotocol.CWPMessaging;
 import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolImplementation;
+import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolListener;
 
-public class CWPModel extends Observable implements CWPMessaging, CWPControl {
-    cwProtocolImplementation CWProtocolImplementation;
+public class CWPModel extends Observable implements CWPMessaging, CWPControl, CWProtocolListener {
+    CWProtocolImplementation cwProtocolImplementation;
 
     @Override
     public void connect(String serverAddr, int serverPort, int frequency) throws IOException {
@@ -65,5 +66,11 @@ public class CWPModel extends Observable implements CWPMessaging, CWPControl {
     @Override
     public boolean serverSetLineUp() {
         return false;
+    }
+
+    @Override
+    public void onEvent(CWPEvent event, int param) {
+        setChanged();
+        notifyObservers(event);
     }
 }
