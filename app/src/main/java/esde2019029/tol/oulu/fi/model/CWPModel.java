@@ -30,7 +30,9 @@ public class CWPModel extends Observable implements CWPMessaging, CWPControl {
     }
 
     @Override
-    public int frequency() { return CWProtocolImplementation.DEFAULT_FREQUENCY; }
+    public int frequency() {
+        return DEFAULT_FREQUENCY;
+    }
 
     public void addObserver(Observer observer){
     }
