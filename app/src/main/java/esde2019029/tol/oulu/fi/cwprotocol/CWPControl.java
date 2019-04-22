@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.util.Observer;
 
 public interface CWPControl {
-    public static final int DEFAULT_FREQUENCY = -1;
 
     public void addObserver(Observer observer);
     public void deleteObserver(Observer observer);

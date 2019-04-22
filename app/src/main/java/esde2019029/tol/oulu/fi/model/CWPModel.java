@@ -6,22 +6,21 @@ import java.util.Observer;
 
 import esde2019029.tol.oulu.fi.cwprotocol.CWPControl;
 import esde2019029.tol.oulu.fi.cwprotocol.CWPMessaging;
+import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolImplementation;
 
 public class CWPModel extends Observable implements CWPMessaging, CWPControl {
-
-    public enum CWPState {Disconnected, Connected, LineUp, LineDown};
-    private volatile CWPState currentState = CWPState.Disconnected;
+    CWProtocolImplementation cwProtocolImplementation;
 
     @Override
     public void connect(String serverAddr, int serverPort, int frequency) throws IOException {
         setChanged();
-        notifyObservers(currentState);
+        notifyObservers(cwProtocolImplementation.getCurrentState());
     }
 
     @Override
     public void disconnect() throws IOException {
         setChanged();
-        notifyObservers(currentState);
+        notifyObservers(cwProtocolImplementation.getCurrentState());
 
     }
 
@@ -44,13 +43,13 @@ public class CWPModel extends Observable implements CWPMessaging, CWPControl {
     @Override
     public void lineUp() throws IOException {
         setChanged();
-        notifyObservers(currentState);
+        notifyObservers(cwProtocolImplementation.getCurrentState());
     }
 
     @Override
     public void lineDown() throws IOException {
         setChanged();
-        notifyObservers(currentState);
+        notifyObservers(cwProtocolImplementation.getCurrentState());
     }
 
     @Override
