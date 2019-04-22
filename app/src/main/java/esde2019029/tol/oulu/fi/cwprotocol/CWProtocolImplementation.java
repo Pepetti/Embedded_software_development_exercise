@@ -1,5 +1,7 @@
 package esde2019029.tol.oulu.fi.cwprotocol;
 
+import android.os.Handler;
+
 import java.io.IOException;
 import java.util.Observer;
 import java.util.Timer;
@@ -17,6 +19,12 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     public CWPState getCurrentState(){
         return currentState;
     }
+
+    private CWPState nextState = currentState;
+    private int currentFrequency = DEFAULT_FREQUENCY;
+    private CWPConnectionReader connection = null;
+    private Handler receiveHandler = new Handler();
+    private int messageValue = 0;
 
     @Override
     public void addObserver(Observer observer) {
@@ -105,6 +113,13 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         }
 
+        private void changeProtocolState(CWPState state, int param) throws InterruptedException{
+            //Log.d(TAG, "Change protocol state to " + state);
+            nextState = state;
+            messageValue = param;
+            receiveHandler.post(myProcessor);
+        }
+
         void startReading(){
             running = true;
             start();
@@ -116,9 +131,11 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             running = false;
             myTimer = null;
             myTimerTask = null;
+            currentState = CWPState.Disconnected;
         }
 
         private void doInitialize() throws InterruptedException{
+            currentState = CWPState.Connected;
             myTimer = new Timer();
             myTimerTask = new TimerTask() {
                 @Override
@@ -127,12 +144,18 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                 }
             };
             myTimer.scheduleAtFixedRate(myTimerTask, 500, 1000);
+            if(currentState == CWPState.LineDown){
+                currentState = CWPState.LineUp;
+            }else if(currentState == CWPState.LineUp){
+                currentState = CWPState.LineDown;
+            }
         }
 
         @Override
         public void run(){
             try {
                 doInitialize();
+                changeProtocolState(CWPState.LineDown, 1);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -145,4 +168,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
 
     }
+
+    
 }
