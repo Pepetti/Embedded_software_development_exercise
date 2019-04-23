@@ -18,6 +18,8 @@ import esde2019029.tol.oulu.fi.model.CWPModel;
 
 public class MainActivity extends AppCompatActivity implements CWPProvider {
 
+    private CWPModel cwpModel;
+
     @Override
     public CWPMessaging getMessaging(){
         return cwpModel;
@@ -26,7 +28,6 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
     @Override
     public CWPControl getCWPControl() { return cwpModel; }
 
-    CWPModel cwpModel;
 
     /**
      * The {@link android.support.v4.view.PagerAdapter} that will provide
@@ -47,7 +48,6 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        cwpModel = new CWPModel();
 
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -59,6 +59,7 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
         // Set up the ViewPager with the sections adapter.
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
+        cwpModel = new CWPModel();
 
     }
 

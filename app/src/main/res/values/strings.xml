@@ -1,13 +1,10 @@
 <resources>
     <string name="app_name">CWP CLient 2019029</string>
     <string name="action_settings">Settings</string>
-    <string name="section_format">Hello World from section: %1$d</string>
     <string name="LineUp">●</string>
     <string name="LineDown">○</string>
-    <string name="textOn">Text on</string>
-    <string name="textOff">Text off</string>
-
-    <string name="connecting_cwp">Hello blank fragment</string>
+    <string name="textOn">Server on</string>
+    <string name="textOff">Server off</string>
     <string name="title_activity_settings">Settings</string>
 
     <!-- Strings related to Settings -->
@@ -19,6 +16,13 @@
     <string name="Server_address">Server address</string>
     <string name="Frequency">Frequency</string>
     <string name="pref_default_display_name"></string>
+
+    <!-- Toasted -->
+    <string name="connected">Connected</string>
+    <string name="disconnected">Disconnected</string>
+
+
+
 
 
 

@@ -15,6 +15,7 @@ import java.util.Observable;
 import java.util.Observer;
 
 import esde2019029.tol.oulu.fi.cwprotocol.CWPControl;
+import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolListener;
 
 
 /**
@@ -88,6 +89,11 @@ public class ControlFragment extends Fragment implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
-        Toast.makeText(getActivity().getApplicationContext(), getString(R.string.connecting_cwp), Toast.LENGTH_SHORT).show();
+        if (arg == CWProtocolListener.CWPEvent.EConnected) {
+            Toast.makeText(getActivity().getApplicationContext(), getString(R.string.connected), Toast.LENGTH_SHORT).show();
+        }
+        if (arg == CWProtocolListener.CWPEvent.EDisconnected) {
+            Toast.makeText(getActivity().getApplicationContext(), getString(R.string.disconnected), Toast.LENGTH_SHORT).show();
+        }
     }
 }

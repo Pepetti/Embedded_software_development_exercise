@@ -11,25 +11,25 @@ import java.util.TimerTask;
 public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runnable  {
 
     CWPConnectionReader cwpConnectionReader;
-    public static final int DEFAULT_FREQUENCY = -1;
-
     CWProtocolListener listener;
 
+    public static final int DEFAULT_FREQUENCY = -1;
+
+    boolean lineUpByUser;
+    boolean lineUpByServer;
 
     public enum CWPState {Disconnected, Connected, LineUp, LineDown};
     private volatile CWPState currentState = CWPState.Disconnected;
-
-    public CWPState getCurrentState(){
-        return currentState;
-    }
-
-
-
     private CWPState nextState = currentState;
     private int currentFrequency = DEFAULT_FREQUENCY;
     private CWPConnectionReader connection = null;
     private Handler receiveHandler = new Handler();
     private int messageValue = 0;
+    private static final String TAG = "CWPImplementation";
+
+    public CWPState getCurrentState(){
+        return currentState;
+    }
 
     public CWProtocolImplementation(CWProtocolListener listener_p){
         listener = listener_p;
@@ -47,22 +47,36 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     @Override
     public void lineUp() throws IOException {
-
+        lineUpByUser = true;
+        Log.d(TAG, "State change to LineUp happening..");
+        currentState = CWPState.LineUp;
+        listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, 0);
     }
 
     @Override
     public void lineDown() throws IOException {
-
+        lineUpByUser = false;
+        if (lineUpByServer == false) {
+            Log.d(TAG, "State change to LineDown happening..");
+            currentState = CWPState.LineDown;
+            listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
+        }
     }
 
     @Override
     public void connect(String serverAddr, int serverPort, int frequency) throws IOException {
+        Log.d(TAG, "State change to Connected happening..");
+        currentState = CWPState.Connected;
+        listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
         cwpConnectionReader = new CWPConnectionReader(this);
         cwpConnectionReader.startReading();
     }
 
     @Override
     public void disconnect() throws IOException {
+        Log.d(TAG, "State change to Disconnected happening..");
+        currentState = CWPState.Disconnected;
+        listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, 0);
         if (cwpConnectionReader.myProcessor != null) {
             try {
                 cwpConnectionReader.stopReading();
@@ -81,7 +95,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     @Override
     public boolean isConnected() {
-        return false;
+        return currentState == CWPState.Connected;
     }
 
     @Override
@@ -107,6 +121,31 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         return 0;
     }
 
+    public void run() {
+        switch (nextState) {
+            case Connected:
+                Log.d(TAG, "State change to Connected happening..");
+                currentState = nextState;
+                listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
+                break;
+            case Disconnected:
+                Log.d(TAG, "State change to Disconnected happening...");
+                currentState = nextState;
+                listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, 0);
+                break;
+            case LineDown:
+                Log.d(TAG, "State change to LineDown happening...");
+                currentState = nextState;
+                listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
+                break;
+            case LineUp:
+                Log.d(TAG, "State change to LineUp happening..");
+                currentState = nextState;
+                listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, 0);
+                break;
+        }
+    }
+
     private class CWPConnectionReader extends Thread{
 
         private volatile boolean running = false;
@@ -123,7 +162,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         }
 
         private void changeProtocolState(CWPState state, int param) throws InterruptedException{
-            //Log.d(TAG, "Change protocol state to " + state);
+            Log.d(TAG, "Change protocol state to " + state);
             nextState = state;
             messageValue = param;
             receiveHandler.post(myProcessor);
@@ -132,7 +171,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         void startReading(){
             running = true;
             start();
-            run();
         }
 
         void stopReading() throws InterruptedException{
@@ -144,27 +182,38 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         }
 
         private void doInitialize() throws InterruptedException{
-            currentState = CWPState.Connected;
+            changeProtocolState(CWPState.Connected, 0);
             myTimer = new Timer();
             myTimerTask = new TimerTask() {
                 @Override
                 public void run() {
-                    myTimerTask.run();
+                    if (currentState == CWPState.LineDown) {
+                        lineUpByServer = true;
+                        try{
+                            changeProtocolState(CWPState.LineUp, 0);
+                        }catch (InterruptedException ie){
+                            ie.printStackTrace();
+                        }
+                    } else if (currentState == CWPState.LineUp) {
+                        lineUpByServer = false;
+                        if (lineUpByUser == false) {
+                            try {
+                                changeProtocolState(CWPState.LineDown, 0);
+                            } catch (InterruptedException ie) {
+                                ie.printStackTrace();
+                            }
+                        }
+                    }
                 }
             };
             myTimer.scheduleAtFixedRate(myTimerTask, 500, 1000);
-            if(currentState == CWPState.LineDown){
-                currentState = CWPState.LineUp;
-            }else if(currentState == CWPState.LineUp){
-                currentState = CWPState.LineDown;
-            }
         }
 
         @Override
         public void run(){
             try {
                 doInitialize();
-                changeProtocolState(CWPState.LineDown, 1);
+                changeProtocolState(CWPState.LineDown, 0);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
@@ -175,31 +224,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         }
 
-
     }
 
-    public void run(){
-        switch(nextState){
-            case Connected:
-                Log.d(null, "State change to Connected happening..");
-                currentState = nextState;
-                listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
-                break;
-            case Disconnected:
-                Log.d(null, "State change to Disconnected happening...");
-                currentState = nextState;
-                listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, 0);
-                break;
-            case LineDown:
-                Log.d(null, "State change to LineDown happening...");
-                currentState = nextState;
-                listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
-                break;
-            case LineUp:
-                Log.d(null, "State change to LineUp happening..");
-                currentState = nextState;
-                listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, 0);
-                break;
-        }
-    }
 }

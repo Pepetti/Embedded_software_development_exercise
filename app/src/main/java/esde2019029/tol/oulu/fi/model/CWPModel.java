@@ -2,7 +2,6 @@ package esde2019029.tol.oulu.fi.model;
 
 import java.io.IOException;
 import java.util.Observable;
-import java.util.Observer;
 
 import esde2019029.tol.oulu.fi.cwprotocol.CWPControl;
 import esde2019029.tol.oulu.fi.cwprotocol.CWPMessaging;
@@ -10,16 +9,18 @@ import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolImplementation;
 import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolListener;
 
 public class CWPModel extends Observable implements CWPMessaging, CWPControl, CWProtocolListener {
-    CWProtocolImplementation cwProtocolImplementation;
+    CWProtocolImplementation cwProtocolImplementation = new CWProtocolImplementation(this);
 
     @Override
     public void connect(String serverAddr, int serverPort, int frequency) throws IOException {
+        cwProtocolImplementation.connect(serverAddr, serverPort, frequency);
         setChanged();
         notifyObservers(cwProtocolImplementation.getCurrentState());
     }
 
     @Override
     public void disconnect() throws IOException {
+        cwProtocolImplementation.disconnect();
         setChanged();
         notifyObservers(cwProtocolImplementation.getCurrentState());
 
@@ -27,28 +28,22 @@ public class CWPModel extends Observable implements CWPMessaging, CWPControl, CW
 
     @Override
     public void setFrequency(int frequency) throws IOException {
-
+        cwProtocolImplementation.setFrequency(frequency);
     }
 
     @Override
-    public int frequency() {
-        return DEFAULT_FREQUENCY;
-    }
-
-    public void addObserver(Observer observer){
-    }
-
-    public void deleteObserver(Observer observer){
-    }
+    public int frequency() { return cwProtocolImplementation.frequency(); }
 
     @Override
     public void lineUp() throws IOException {
+        cwProtocolImplementation.lineUp();
         setChanged();
         notifyObservers(cwProtocolImplementation.getCurrentState());
     }
 
     @Override
     public void lineDown() throws IOException {
+        cwProtocolImplementation.lineDown();
         setChanged();
         notifyObservers(cwProtocolImplementation.getCurrentState());
     }
@@ -60,7 +55,7 @@ public class CWPModel extends Observable implements CWPMessaging, CWPControl, CW
 
     @Override
     public boolean lineIsUp() {
-        return false;
+       return cwProtocolImplementation.lineIsUp();
     }
 
     @Override
