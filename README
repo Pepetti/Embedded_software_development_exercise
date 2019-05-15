@@ -1,0 +1,26 @@
+MEMBERS OF THE GROUP:
+
+Member1:
+- Name: Prikka-Pekka Launonen
+- E-mail: plaunone@student.oulu.fi
+- Student#: 2471349
+
+Member2:
+- Name: Oskari Kotajärvi
+- E-mail: oskari.kotajarvi@gmail.com
+- Student#: 2462701
+
+BUILD:
+
+First clone the repo (git clone...)
+After this open the repo folder in android studio. Android studio recognizes the git repo as a android studio project.
+After this press the "run" button in android studio (green play symbol) and configure your emulator device if you havent already done so.
+(Project has been tested with a nexus 5X with oreo 26).
+After this the app should open automatically in the emulator, but if it doesn't, the app can be found in the applications menu.
+
+USAGE:
+In the first screen you can press the hall button to activate it, and it stays in "on" position as long as you keep the image pressed.
+Swiping the screen to the right gets you to the screen where you can connect to the server. Pressing the bar at the top of the application
+screen connects / disconnects you to/from the server. In the upper right corner you can press the three dots to open a menu where you can go
+to the application settings. In "general" you can configure your server address (for example "hölökynkölökyn.vappu.fi") and the frequency on which
+the application works on (for example 1337).
