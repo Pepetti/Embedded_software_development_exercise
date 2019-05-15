@@ -1,7 +1,9 @@
 package esde2019029.tol.oulu.fi;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
@@ -17,15 +19,6 @@ import java.util.Observer;
 import esde2019029.tol.oulu.fi.cwprotocol.CWPControl;
 import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolListener;
 
-
-/**
- * A simple {@link Fragment} subclass.
- * Activities that contain this fragment must implement the
- * {@link ControlFragment.OnFragmentInteractionListener} interface
- * to handle interaction events.
- * Use the {@link ControlFragment#newInstance} factory method to
- * create an instance of this fragment.
- */
 
 public class ControlFragment extends Fragment implements Observer {
     private CWPControl cwpControl;
@@ -46,6 +39,9 @@ public class ControlFragment extends Fragment implements Observer {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
+        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+        final String server = preferences.getString("key_server_address", "hölkynkölkyn.com");
+        final int frequency = Integer.parseInt(preferences.getString("key_default_frequency", "70"));
         View view = inflater.inflate(R.layout.fragment_control, container, false);
         ToggleButton toggleButton = (ToggleButton) view.findViewById(R.id.CWPServerConnection);
 
@@ -54,7 +50,7 @@ public class ControlFragment extends Fragment implements Observer {
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
                     try {
-                        cwpControl.connect("HölkynKölkyn.com", 666, 52);
+                        cwpControl.connect(server, 20000, frequency);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

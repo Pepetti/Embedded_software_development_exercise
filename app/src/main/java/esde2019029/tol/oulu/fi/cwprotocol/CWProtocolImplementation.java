@@ -3,10 +3,16 @@ package esde2019029.tol.oulu.fi.cwprotocol;
 import android.os.Handler;
 import android.util.Log;
 
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Observer;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runnable  {
 
@@ -26,6 +32,12 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     private Handler receiveHandler = new Handler();
     private int messageValue = 0;
     private static final String TAG = "CWPImplementation";
+
+    private static final int BUFFER_LENGTH = 64;
+    private OutputStream nos = null; //Network Output Stream
+    private ByteBuffer outBuffer = null;
+    private String serverAddr = null;
+    private int serverPort = -1;
 
     public CWPState getCurrentState(){
         return currentState;
@@ -148,13 +160,15 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     private class CWPConnectionReader extends Thread{
 
+        private Socket cwpSocket = null;
+        private InputStream nis = null; //nis means Network Input Stream
+
         private volatile boolean running = false;
         private Runnable myProcessor = null;
         private static final String TAG = "CWPReader";
 
-        // Used before networking for timing cw signals
-        private Timer myTimer = null;
-        private TimerTask myTimerTask = null;
+        int bytesToRead = 4;
+        int bytesRead = 0;
 
         CWPConnectionReader(Runnable processor) {
             myProcessor = processor;
@@ -173,56 +187,103 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             start();
         }
 
-        void stopReading() throws InterruptedException{
-            myTimer.cancel();
-            running = false;
-            myTimer = null;
-            myTimerTask = null;
-            currentState = CWPState.Disconnected;
+        void stopReading() throws IOException, InterruptedException {
+            Log.d(TAG, "Disconnecting...");
+            cwpSocket.close();
+            cwpSocket = null;
+            changeProtocolState(CWPState.Disconnected, 0);
+            serverAddr = null;
+            serverPort = -1;
+            Log.d(TAG, "Disconnected");
         }
 
-        private void doInitialize() throws InterruptedException{
+        private void doInitialize() throws IOException, InterruptedException {
+            serverAddr = "cwp.opimobi.com";
+            serverPort = 20000;
+
+            SocketAddress socketAddress = new InetSocketAddress(serverAddr, serverPort);
+            cwpSocket = new Socket();
+            cwpSocket.connect(socketAddress, 5000);
+            nis = cwpSocket.getInputStream();
+            cwpSocket.getOutputStream();
             changeProtocolState(CWPState.Connected, 0);
-            myTimer = new Timer();
-            myTimerTask = new TimerTask() {
-                @Override
-                public void run() {
-                    if (currentState == CWPState.LineDown) {
-                        lineUpByServer = true;
-                        try{
-                            changeProtocolState(CWPState.LineUp, 0);
-                        }catch (InterruptedException ie){
-                            ie.printStackTrace();
-                        }
-                    } else if (currentState == CWPState.LineUp) {
-                        lineUpByServer = false;
-                        if (lineUpByUser == false) {
-                            try {
-                                changeProtocolState(CWPState.LineDown, 0);
-                            } catch (InterruptedException ie) {
-                                ie.printStackTrace();
-                            }
-                        }
-                    }
-                }
-            };
-            myTimer.scheduleAtFixedRate(myTimerTask, 500, 1000);
+            Log.d(TAG, "Connected");
+        }
+
+        private int readLoop(byte [] bytes, int bytesToRead) throws IOException {
+            int readNow;
+            do{
+               readNow = nis.read(bytes, bytesRead, bytesToRead-bytesRead);
+            } while (readNow != -1);
+            if (readNow == -1) {
+                throw new IOException("Read -1 from stream");
+            }
+
+            return readNow;
         }
 
         @Override
         public void run(){
+
+            byte[] byteArray = new byte[4];
+            ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.SIZE / 8);
+            byteBuffer.order(ByteOrder.BIG_ENDIAN);
+
             try {
                 doInitialize();
                 changeProtocolState(CWPState.LineDown, 0);
+
+                while(running){
+                    readLoop(byteArray, bytesToRead);
+                    byteBuffer.clear();
+                    byteBuffer.wrap(byteArray);
+                    byteBuffer.position(0);
+                    int intValue = byteBuffer.getInt();
+                    if (intValue == -1 ){
+                        changeProtocolState(CWPState.LineDown, 0);
+                    }
+                    else if (intValue >= 0){
+                        changeProtocolState(CWPState.LineUp, 0);
+                        readLoop(byteArray, 2);
+                        changeProtocolState(CWPState.LineDown, 0);
+                    }
+
+                }
             } catch (InterruptedException e) {
                 e.printStackTrace();
-            }
-            //placeholder
-            while(running){
-
+            } catch (IOException e) {
+                e.printStackTrace();
             }
 
         }
+
+    }
+
+    private class CWPConnectionWriter extends Thread{
+
+        private static final String TAG = "CWPWriter";
+        boolean running = false;
+
+        void startSending(){
+            running = true;
+            start();
+        }
+
+        void stopSending(){ running = false; }
+
+        @Override
+        public void run(){}
+
+        private void sendMessage(int msg) throws IOException {
+            ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.SIZE / 8);
+            byteBuffer.order(ByteOrder.BIG_ENDIAN);
+            byteBuffer.putInt(msg);
+            byteBuffer.position(0);
+            byte[] byteArray = byteBuffer.array();
+
+        }
+
+        private void sendMessage(short msg) throws IOException{}
 
     }
 

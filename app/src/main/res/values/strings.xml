@@ -12,7 +12,6 @@
     <!-- Example General settings -->
     <string name="pref_header_general">General</string>
 
-
     <string name="Server_address">Server address</string>
     <string name="Frequency">Frequency</string>
     <string name="pref_default_display_name"></string>
