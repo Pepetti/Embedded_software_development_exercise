@@ -39,6 +39,8 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     private String serverAddr = null;
     private int serverPort = -1;
 
+
+
     private CWPConnectionWriter cwpConnectionWriter = null;
     private ConditionVariable conditionVariable = new ConditionVariable();
     int fourBytes = 0;
