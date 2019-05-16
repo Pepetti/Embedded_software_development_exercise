@@ -12,6 +12,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.util.Date;
 import java.util.Observer;
 
 public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runnable  {
@@ -39,13 +40,13 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     private String serverAddr = null;
     private int serverPort = -1;
 
-
+    private Date date = new Date();
+    private int stamp = 0;
 
     private CWPConnectionWriter cwpConnectionWriter = null;
     private ConditionVariable conditionVariable = new ConditionVariable();
     int fourBytes = 0;
     short twoBytes = 0;
-
 
     public CWPState getCurrentState(){
         return currentState;
@@ -76,7 +77,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     @Override
     public void lineDown() throws IOException {
         lineUpByUser = false;
-        if (lineUpByServer == false) {
+        if (!lineUpByServer) {
             Log.d(TAG, "State change to LineDown happening..");
             currentState = CWPState.LineDown;
             listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
