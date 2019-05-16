@@ -1,9 +1,9 @@
 package esde2019029.tol.oulu.fi.cwprotocol;
 
+import android.os.ConditionVariable;
 import android.os.Handler;
 import android.util.Log;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -34,10 +34,16 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     private static final String TAG = "CWPImplementation";
 
     private static final int BUFFER_LENGTH = 64;
-    private OutputStream nos = null; //Network Output Stream
     private ByteBuffer outBuffer = null;
+    private OutputStream nos = null; //Network Output Stream
     private String serverAddr = null;
     private int serverPort = -1;
+
+    private CWPConnectionWriter cwpConnectionWriter = null;
+    private ConditionVariable conditionVariable = new ConditionVariable();
+    int fourBytes = 0;
+    short twoBytes = 0;
+
 
     public CWPState getCurrentState(){
         return currentState;
@@ -80,8 +86,8 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         Log.d(TAG, "State change to Connected happening..");
         currentState = CWPState.Connected;
         listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
-        cwpConnectionReader = new CWPConnectionReader(this);
-        cwpConnectionReader.startReading();
+        cwpConnectionWriter = new CWPConnectionWriter();
+        cwpConnectionWriter.startSending();
     }
 
     @Override
@@ -89,19 +95,15 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         Log.d(TAG, "State change to Disconnected happening..");
         currentState = CWPState.Disconnected;
         listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, 0);
-        if (cwpConnectionReader.myProcessor != null) {
+        if (cwpConnectionWriter != null) {
+            cwpConnectionWriter.stopSending();
             try {
-                cwpConnectionReader.stopReading();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            try {
-                cwpConnectionReader.join();
+                cwpConnectionWriter.join();
             } catch (InterruptedException e) {
                 e.printStackTrace();
             }
 
-            cwpConnectionReader.myProcessor = null;
+            cwpConnectionWriter = null;
         }
     }
 
@@ -161,7 +163,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     private class CWPConnectionReader extends Thread{
 
         private Socket cwpSocket = null;
-        private InputStream nis = null; //nis means Network Input Stream
+        private InputStream nis = null; //Network Input Stream
 
         private volatile boolean running = false;
         private Runnable myProcessor = null;
@@ -205,7 +207,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             cwpSocket = new Socket();
             cwpSocket.connect(socketAddress, 5000);
             nis = cwpSocket.getInputStream();
-            cwpSocket.getOutputStream();
+            nos = cwpSocket.getOutputStream();
             changeProtocolState(CWPState.Connected, 0);
             Log.d(TAG, "Connected");
         }
@@ -275,15 +277,30 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         public void run(){}
 
         private void sendMessage(int msg) throws IOException {
-            ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.SIZE / 8);
-            byteBuffer.order(ByteOrder.BIG_ENDIAN);
-            byteBuffer.putInt(msg);
-            byteBuffer.position(0);
-            byte[] byteArray = byteBuffer.array();
-
+            Log.d(TAG, "Sending msg...");
+            outBuffer = ByteBuffer.allocate(Integer.SIZE / 8);
+            outBuffer.order(ByteOrder.BIG_ENDIAN);
+            outBuffer.putInt(msg);
+            outBuffer.position(0);
+            byte[] byteArray = outBuffer.array();
+            nos.write(byteArray);
+            nos.flush();
+            outBuffer = null;
+            Log.d(TAG, "Sent msg");
         }
 
-        private void sendMessage(short msg) throws IOException{}
+        private void sendMessage(short msg) throws IOException{
+            Log.d(TAG, "Sending short msg...");
+            outBuffer = ByteBuffer.allocate(Integer.SIZE / 4);
+            outBuffer.order(ByteOrder.BIG_ENDIAN);
+            outBuffer.putShort(msg);
+            outBuffer.position(0);
+            byte[] byteArray = outBuffer.array();
+            nos.write(byteArray);
+            nos.flush();
+            outBuffer = null;
+            Log.d(TAG, "Sent short msg");
+        }
 
     }
 
