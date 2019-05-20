@@ -12,7 +12,6 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.util.Date;
 import java.util.Observer;
 
 public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runnable  {
@@ -40,13 +39,17 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     private String serverAddr = null;
     private int serverPort = -1;
 
-    private Date date = new Date();
-    private int stamp = 0;
-
     private CWPConnectionWriter cwpConnectionWriter = null;
     private ConditionVariable conditionVariable = new ConditionVariable();
     int fourBytes = 0;
     short twoBytes = 0;
+
+
+    long timeUpStart;
+    long timeUpStart2;
+    long timeDownStart;
+    long estimatedUpTime;
+    long estimatedDownTime;
 
     public CWPState getCurrentState(){
         return currentState;
@@ -68,20 +71,50 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     @Override
     public void lineUp() throws IOException {
+
+        /*
+        ** KESKEN!!!!
+
         lineUpByUser = true;
         Log.d(TAG, "State change to LineUp happening..");
         currentState = CWPState.LineUp;
+        timeUpStart = System.nanoTime();
         listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, 0);
+        estimatedUpTime = System.nanoTime() - timeUpStart;
+        if (estimatedUpTime > 30000) {
+            lineDown();
+            timeDownStart = System.nanoTime();
+        } else if (currentState == CWPState.LineDown) {
+            currentState = CWPState.LineUp;
+            timeUpStart2 = System.nanoTime();
+            estimatedDownTime = System.nanoTime() - timeDownStart;
+            listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, 0);
+        }
+        long sum = timeDownStart + estimatedDownTime;
+        if (sum == timeUpStart2) {
+            fourBytes = (int) sum;
+        }
+        conditionVariable.open();
+
+        */
     }
+
 
     @Override
     public void lineDown() throws IOException {
+
+        /*
+        ** KESKEN!!!!
+
         lineUpByUser = false;
         if (!lineUpByServer) {
             Log.d(TAG, "State change to LineDown happening..");
             currentState = CWPState.LineDown;
             listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
+            twoBytes = (short) estimatedUpTime;
+            conditionVariable.open();
         }
+        */
     }
 
     @Override
@@ -135,7 +168,14 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     @Override
     public int frequency() {
+
         return 0;
+    }
+
+    public int sendFrequency(){
+        fourBytes = currentFrequency;
+        return fourBytes;
+
     }
 
     public void run() {
@@ -274,10 +314,33 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             start();
         }
 
-        void stopSending(){ running = false; }
+        void stopSending(){
+            running = false;
+            conditionVariable.open();
+        }
 
         @Override
-        public void run(){}
+        public void run(){
+            while (running){
+                try {
+                    conditionVariable.block();
+                    if (fourBytes != 0) {
+                        sendMessage(fourBytes);
+                        fourBytes = 0;
+                        conditionVariable.close();
+                    }
+                    else if (twoBytes > 0){
+                        sendMessage(twoBytes);
+                        twoBytes = 0;
+                        conditionVariable.close();
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+
+            }
+        }
 
         private void sendMessage(int msg) throws IOException {
             Log.d(TAG, "Sending msg...");
