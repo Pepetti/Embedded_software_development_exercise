@@ -25,8 +25,8 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     public static final int DEFAULT_FREQUENCY = -1;
 
-    boolean lineUpByUser;
-    boolean lineUpByServer;
+    private boolean lineUpByUser;
+    private boolean lineUpByServer;
 
     public enum CWPState {Disconnected, Connected, LineUp, LineDown};
     private volatile CWPState currentState = CWPState.Disconnected;
@@ -43,12 +43,14 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     private String serverAddr = null;
     private int serverPort = -1;
 
+    private int fourBytes = 0;
+    private short twoBytes = 0;
+
     private CWPConnectionWriter cwpConnectionWriter = null;
     private ConditionVariable conditionVariable = new ConditionVariable();
 
-    Timestamp timestamp = new Timestamp(System.currentTimeMillis());
-    long lineUp;
-    long lineDown;
+    private int timestamp;
+    private long connectionEstablished;
 
     private Semaphore lock = new Semaphore(1);
 
@@ -73,33 +75,33 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     @Override
     public void lineUp() throws IOException {
-        int fourBytes = 0;
-
-        if (!lineUpByUser == false && (currentState == CWPState.LineUp || currentState == CWPState.LineDown )) {
-            /*
-            LASKELMATOTEUTUS(?) JA LUKKO TÄHÄN
-             */
-        }
-        else if (!lineUpByServer && currentState == CWPState.LineDown){
-            Log.d(TAG, "State change to LineUp happening..");
-            try{
-                lock.acquire();
-                currentState = CWPState.LineUp;
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            } finally {
-                lock.release();
-            }
-            lineUpByUser = true;
-            listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, 0); //0 tilalle loppulaskelmoitu timeStamp
+        boolean stateChanged = false;
+        if (!lineUpByUser && (currentState == CWPState.LineUp || currentState == CWPState.LineDown )) {
+           Long tempStamp = System.currentTimeMillis() - connectionEstablished;
+           timestamp = tempStamp.intValue();
+           messageValue = timestamp;
+           conditionVariable.open();
+           if(currentState == CWPState.LineDown && !lineUpByServer){
+               try{
+                   lock.acquire();
+                   stateChanged = true;
+                   currentState = CWPState.LineUp;
+               }catch(InterruptedException e){
+                   e.printStackTrace();
+               }finally{
+                   lock.release();
+               }
+           }
+           lineUpByUser = true;
+           if(stateChanged){
+               CWProtocolListener.onEvent(CWProtocolListener.CWPEvent.ELineUp, timestamp);
+           }
         }
     }
 
 
     @Override
     public void lineDown() throws IOException {
-
-        short twoBytes = 0;
 
         if (currentState == CWPState.LineUp && lineUpByUser){
             /*
@@ -126,6 +128,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     public void connect(String serverAddr, int serverPort, int frequency) throws IOException {
         Log.d(TAG, "State change to Connected happening..");
         currentState = CWPState.Connected;
+        connectionEstablished = System.currentTimeMillis();
         listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
         cwpConnectionReader = new CWPConnectionReader(this);
         cwpConnectionWriter = new CWPConnectionWriter();
@@ -137,6 +140,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     public void disconnect() throws IOException, InterruptedException {
         Log.d(TAG, "State change to Disconnected happening..");
         currentState = CWPState.Disconnected;
+        connectionEstablished = 0L;
         listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, 0);
         if (cwpConnectionReader != null) {
             cwpConnectionReader.stopReading();
