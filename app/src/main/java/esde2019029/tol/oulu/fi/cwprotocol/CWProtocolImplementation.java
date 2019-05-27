@@ -94,7 +94,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
            }
            lineUpByUser = true;
            if(stateChanged){
-               CWProtocolListener.onEvent(CWProtocolListener.CWPEvent.ELineUp, timestamp);
+               listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, timestamp);
            }
         }
     }
