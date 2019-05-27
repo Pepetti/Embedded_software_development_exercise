@@ -12,12 +12,12 @@
         android:inputType="textUri" />
 
     <EditTextPreference
-    android:title="@string/Frequency"
-    android:defaultValue="true"
-    android:inputType="number"
-    android:key="key_default_frequency"
-    android:selectAllOnFocus="true"
-    android:singleLine="true" />
+        android:title="@string/Frequency"
+        android:defaultValue="true"
+        android:inputType="number"
+        android:key="key_default_frequency"
+        android:selectAllOnFocus="true"
+        android:singleLine="true" />
 
 
 

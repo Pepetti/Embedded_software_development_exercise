@@ -23,10 +23,12 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
+            android:key="key_default_frequency"
             android:text="Frequency" />
 
         <EditText
-            android:id="@+id/editText"
+            android:id="@+id/editFrequency"
+            android:key="key_editable_frequency"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"
@@ -34,7 +36,7 @@
             android:inputType="numberSigned" />
 
         <Button
-            android:id="@+id/button"
+            android:id="@+id/freqChangeButton"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_weight="1"

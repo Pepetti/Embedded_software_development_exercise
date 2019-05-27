@@ -8,7 +8,9 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.CompoundButton;
+import android.widget.EditText;
 import android.widget.Toast;
 import android.widget.ToggleButton;
 
@@ -39,10 +41,10 @@ public class ControlFragment extends Fragment implements Observer {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
 
-        SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
+        final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
         final String server = preferences.getString("key_server_address", "hölkynkölkyn.com");
         final int frequency = Integer.parseInt(preferences.getString("key_default_frequency", "70"));
-        View view = inflater.inflate(R.layout.fragment_control, container, false);
+        final View view = inflater.inflate(R.layout.fragment_control, container, false);
         ToggleButton toggleButton = (ToggleButton) view.findViewById(R.id.CWPServerConnection);
 
         toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
@@ -59,10 +61,37 @@ public class ControlFragment extends Fragment implements Observer {
                         cwpControl.disconnect();
                     } catch (IOException e) {
                         e.printStackTrace();
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
                     }
                 }
             }
         });
+
+        Button freqButton = view.findViewById(R.id.freqChangeButton);
+        freqButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                EditText editText = (EditText) view.findViewById(R.id.editFrequency);
+                int freqFromEdit = Integer.parseInt(editText.getText().toString());
+                SharedPreferences.Editor edit = preferences.edit();
+                edit.putString("key_editable_frequency", Integer.toString(freqFromEdit) );
+                edit.commit();
+                if (freqFromEdit != cwpControl.frequency()){
+                    try {
+                        cwpControl.setFrequency(freqFromEdit);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                    try {
+                        cwpControl.connect(server, 20000, frequency);
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+        });
+
         return view;
     }
 

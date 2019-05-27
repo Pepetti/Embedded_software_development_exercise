@@ -24,6 +24,7 @@ public class TappingFragment extends Fragment implements Observer {
     private ImageView hall9000_offline;
     private CWPMessaging cwpMessaging;
     private TextView userLine;
+    private TextView serverLine;
     private View view;
 
     public TappingFragment() {}
@@ -90,20 +91,35 @@ public class TappingFragment extends Fragment implements Observer {
 
 
     @Override
-    public void update (Observable obs, Object arg){
+    public void update (Observable obs, Object arg) {
 
         if (arg == CWProtocolListener.CWPEvent.ELineUp) {
             hall9000_offline.setImageResource(R.mipmap.hal9000_up);
             userLine = view.findViewById(R.id.userLineState);
             userLine.setText(R.string.LineUp);
-        }
 
-        else if (arg == CWProtocolListener.CWPEvent.ELineDown){
+        } else if (arg == CWProtocolListener.CWPEvent.ELineDown) {
             hall9000_offline.setImageResource(R.mipmap.hal9000_down);
             userLine = view.findViewById(R.id.userLineState);
             userLine.setText(R.string.LineDown);
+
+        } else if (arg == CWProtocolListener.CWPEvent.EDisconnected) {
+            hall9000_offline.setImageResource(R.mipmap.hal9000_offline);
+            userLine = view.findViewById(R.id.userLineState);
+            userLine.setText(R.string.LineDown);
+        } else if (arg == CWProtocolListener.CWPEvent.EConnected) {
+            hall9000_offline.setImageResource(R.mipmap.hal9000_offline);
+
         }
 
+        if (cwpMessaging.serverSetLineUp()){
+            serverLine = view.findViewById(R.id.serverLineState);
+            serverLine.setText(R.string.LineUp);
+        }
+        else if (!cwpMessaging.serverSetLineUp()){
+            serverLine = view.findViewById(R.id.serverLineState);
+            serverLine.setText(R.string.LineDown);
+        }
     }
 
 }

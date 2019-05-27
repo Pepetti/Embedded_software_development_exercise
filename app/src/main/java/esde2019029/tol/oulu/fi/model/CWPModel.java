@@ -19,7 +19,7 @@ public class CWPModel extends Observable implements CWPMessaging, CWPControl, CW
     }
 
     @Override
-    public void disconnect() throws IOException {
+    public void disconnect() throws IOException, InterruptedException {
         cwProtocolImplementation.disconnect();
         setChanged();
         notifyObservers(cwProtocolImplementation.getCurrentState());
@@ -60,7 +60,7 @@ public class CWPModel extends Observable implements CWPMessaging, CWPControl, CW
 
     @Override
     public boolean serverSetLineUp() {
-        return false;
+        return cwProtocolImplementation.serverSetLineUp();
     }
 
     @Override
