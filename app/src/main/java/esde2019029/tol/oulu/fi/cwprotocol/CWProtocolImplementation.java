@@ -181,10 +181,16 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     @Override
     public void setFrequency(int frequency) throws IOException {
-        if (frequency < 0 && frequency != currentFrequency) {
+        Log.d(TAG, "Start frequency change...");
+        if(frequency > 0){
+            currentFrequency = -frequency;
+        } else if(frequency == 0){
+            currentFrequency = DEFAULT_FREQUENCY;
+        }else{
             currentFrequency = frequency;
-            sendFrequency();
         }
+        Log.d(TAG, "frequency: " + currentFrequency);
+        sendFrequency();
     }
 
     @Override
@@ -192,11 +198,29 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         return currentFrequency;
     }
 
-    public void sendFrequency(){
-        if (currentState == CWPState.LineDown) {
-            messageValue = frequency();
+    private void sendFrequency() throws IOException{
+        boolean didIt = false;
+        try{
+            Log.d(TAG, "Attempting to send frequency...");
+            lock.acquire();
+            if(currentState == CWPState.LineDown){
+                Log.d(TAG, "Sending frequency...");
+                messageValue = currentFrequency;
+                conditionVariable.open();
+                currentState = CWPState.Connected;
+                didIt = true;
+            }else{
+                Log.d(TAG, "Line not down. Try again later...");
+            }
+        }catch(InterruptedException e){
+            e.printStackTrace();
+        }finally{
+            lock.release();
+            Log.d(TAG, "Lock released...");
         }
-        conditionVariable.open();
+        if(didIt){
+            listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
+        }
 
     }
 
@@ -218,7 +242,11 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                 lineUpByServer = false;
                 if (!lineUpByUser && currentState == CWPState.Connected) {
                     if (currentFrequency != messageValue) {
-                        sendFrequency();
+                        try {
+                            sendFrequency();
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }else{
                         listener.onEvent(CWProtocolListener.CWPEvent.EChangedFrequency, 0);
                     }
