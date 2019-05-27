@@ -75,13 +75,15 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     @Override
     public void lineUp() throws IOException {
+        Log.d(TAG, "lineUp happening...");
         boolean stateChanged = false;
         if (!lineUpByUser && (currentState == CWPState.LineUp || currentState == CWPState.LineDown )) {
            Long tempStamp = System.currentTimeMillis() - connectionEstablished;
            timestamp = tempStamp.intValue();
-           messageValue = timestamp;
+           fourBytes = timestamp;
            conditionVariable.open();
            if(currentState == CWPState.LineDown && !lineUpByServer){
+               Log.d(TAG, "lineUp by user happening lol äskdee...");
                try{
                    lock.acquire();
                    stateChanged = true;
@@ -90,6 +92,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                    e.printStackTrace();
                }finally{
                    lock.release();
+                   Log.d(TAG, "lineUp lock released...");
                }
            }
            lineUpByUser = true;
@@ -102,24 +105,27 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     @Override
     public void lineDown() throws IOException {
-
-        if (currentState == CWPState.LineUp && lineUpByUser){
-            /*
-            LASKELMAT TÄHÄN!
-             */
-        lineUpByUser = false;
-        if (!lineUpByServer) {
-                Log.d(TAG, "State change to LineDown happening..");
+        Log.d(TAG, "lineDown method started...");
+        boolean stateChanged = false;
+        if(currentState == CWPState.LineUp && lineUpByUser){
+            twoBytes = (short) (System.currentTimeMillis() - connectionEstablished - timestamp);
+            conditionVariable.open();
+            lineUpByUser = false;
+            if(!lineUpByServer){
+                Log.d(TAG, "lineDown happening by user...");
                 try{
                     lock.acquire();
                     currentState = CWPState.LineDown;
-                } catch (InterruptedException e) {
+                    stateChanged = true;
+                }catch(InterruptedException e){
                     e.printStackTrace();
-                } finally {
+                }finally{
                     lock.release();
+                    Log.d(TAG, "lineDown lock released");
                 }
-                lineUpByUser = false;
-                listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, messageValue);
+            }
+            if(stateChanged){
+                listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, twoBytes);
             }
         }
     }
