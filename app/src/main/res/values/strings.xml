@@ -19,6 +19,8 @@
     <!-- Toasted -->
     <string name="connected">Connected</string>
     <string name="disconnected">Disconnected</string>
+    <string name="frequency_change">Freqquency changed</string>
+
 
 
 

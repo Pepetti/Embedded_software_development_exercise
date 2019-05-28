@@ -120,5 +120,8 @@ public class ControlFragment extends Fragment implements Observer {
         if (arg == CWProtocolListener.CWPEvent.EDisconnected) {
             Toast.makeText(getActivity().getApplicationContext(), getString(R.string.disconnected), Toast.LENGTH_SHORT).show();
         }
+        if (arg == CWProtocolListener.CWPEvent.EChangedFrequency) {
+            Toast.makeText(getActivity().getApplicationContext(), getString(R.string.frequency_change), Toast.LENGTH_SHORT).show();
+        }
     }
 }

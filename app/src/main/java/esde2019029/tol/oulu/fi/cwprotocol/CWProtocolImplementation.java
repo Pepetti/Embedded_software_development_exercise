@@ -219,7 +219,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             Log.d(TAG, "Lock released...");
         }
         if(didIt){
-            listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
+            listener.onEvent(CWProtocolListener.CWPEvent.EChangedFrequency, 0);
         }
 
     }
@@ -410,7 +410,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         }
 
         private void sendMessage(int msg) throws IOException {
-            Log.d(TAG, "Sending msg...");
+            Log.d(TAG, "Sending msg..." + msg);
             outBuffer = ByteBuffer.allocate(Integer.SIZE / 8);
             outBuffer.order(ByteOrder.BIG_ENDIAN);
             outBuffer.putInt(msg);
@@ -423,7 +423,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         }
 
         private void sendMessage(short msg) throws IOException{
-            Log.d(TAG, "Sending short msg...");
+            Log.d(TAG, "Sending short msg..." + msg);
             outBuffer = ByteBuffer.allocate(Integer.SIZE / 4);
             outBuffer.order(ByteOrder.BIG_ENDIAN);
             outBuffer.putShort(msg);
