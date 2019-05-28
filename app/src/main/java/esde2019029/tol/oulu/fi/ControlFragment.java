@@ -24,6 +24,7 @@ import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolListener;
 
 public class ControlFragment extends Fragment implements Observer {
     private CWPControl cwpControl;
+    int freqFromEdit;
 
     public ControlFragment() {
         // Required empty public constructor
@@ -43,7 +44,7 @@ public class ControlFragment extends Fragment implements Observer {
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
         final String server = preferences.getString("key_server_address", "hölkynkölkyn.com");
-        final int frequency = Integer.parseInt(preferences.getString("key_default_frequency", "70"));
+        final int frequency = Integer.parseInt(preferences.getString("key_default_frequency", "-1"));
         final View view = inflater.inflate(R.layout.fragment_control, container, false);
         ToggleButton toggleButton = (ToggleButton) view.findViewById(R.id.CWPServerConnection);
 
@@ -73,7 +74,8 @@ public class ControlFragment extends Fragment implements Observer {
             @Override
             public void onClick(View v) {
                 EditText editText = (EditText) view.findViewById(R.id.editFrequency);
-                int freqFromEdit = Integer.parseInt(editText.getText().toString());
+                freqFromEdit = Integer.parseInt(editText.getText().toString());
+                freqFromEdit *= -1;
                 SharedPreferences.Editor edit = preferences.edit();
                 edit.putString("key_editable_frequency", Integer.toString(freqFromEdit) );
                 edit.commit();
@@ -91,7 +93,6 @@ public class ControlFragment extends Fragment implements Observer {
                 }
             }
         });
-
         return view;
     }
 
@@ -121,7 +122,7 @@ public class ControlFragment extends Fragment implements Observer {
             Toast.makeText(getActivity().getApplicationContext(), getString(R.string.disconnected), Toast.LENGTH_SHORT).show();
         }
         if (arg == CWProtocolListener.CWPEvent.EChangedFrequency) {
-            Toast.makeText(getActivity().getApplicationContext(), getString(R.string.frequency_change), Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity().getApplicationContext(), getString(R.string.frequency_change) + freqFromEdit, Toast.LENGTH_SHORT).show();
         }
     }
 }

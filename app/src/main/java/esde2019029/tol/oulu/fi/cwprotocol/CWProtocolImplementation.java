@@ -232,50 +232,67 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     public void run() {
         switch (nextState) {
             case Connected:
-                lock.release();
-                lineUpByServer = false;
                 Log.d(TAG, "State change to Connected happening..");
                 currentState = nextState;
-                listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
+                lock.release();
+                lineUpByServer = false;
+                listener.onEvent(CWProtocolListener.CWPEvent.EConnected, messageValue);
                 break;
             case Disconnected:
-                lock.release();
-                lineUpByServer = false;
                 Log.d(TAG, "State change to Disconnected happening...");
                 currentState = nextState;
-                listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, 0);
+                lineUpByServer = false;
+                lock.release();
+                try {
+                    disconnect();
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, messageValue);
                 break;
             case LineDown:
-                lock.release();
-                lineUpByServer = false;
-                if (!lineUpByUser && currentState == CWPState.Connected) {
+                if (currentState == CWPState.Connected) {
+                    currentState = nextState;
+                    lock.release();
+                    Log.d(TAG, "Frequency change happening...");
                     if (currentFrequency != messageValue) {
                         try {
                             sendFrequency();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                    }else{
-                        listener.onEvent(CWProtocolListener.CWPEvent.EChangedFrequency, 0);
+                    } else {
+                        listener.onEvent(CWProtocolListener.CWPEvent.EChangedFrequency, messageValue);
                     }
-                    Log.d(TAG, "State change to LineDown happening...");
-                    currentState = nextState;
-                    listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
-                }else{
-                    Log.d(TAG, "State change to LineDown happening...");
-                    currentState = nextState;
-                    listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
+                } else {
+                    lineUpByServer = false;
+                    if (!lineUpByUser) {
+                        currentState = nextState;
+                        lock.release();
+                        Log.d(TAG, "State change to LineDown happening...");
+                        listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, messageValue);
+                    } else {
+                        lock.release();
+                        listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
+                    }
                 }
                 break;
             case LineUp:
-                lock.release();
                 lineUpByServer = true;
                 if (!lineUpByUser) {
                     Log.d(TAG, "State change to LineUp happening..");
                     currentState = nextState;
-                    listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, 0);
+                    lock.release();
+                    listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, messageValue);
+                } else {
+                    lock.release();
+                    listener.onEvent(CWProtocolListener.CWPEvent.EServerStateChange, lineUpByServer ? 1 : 0);
                 }
                 break;
+            default:
+                lock.release();
         }
     }
 
@@ -287,8 +304,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         private volatile boolean running = false;
         private Runnable myProcessor = null;
         private static final String TAG = "CWPReader";
-
-        int bytesToRead = 4;
 
         CWPConnectionReader(Runnable processor) {
             myProcessor = processor;
