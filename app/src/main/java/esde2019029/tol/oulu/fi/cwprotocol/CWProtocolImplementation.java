@@ -232,18 +232,21 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     public void run() {
         switch (nextState) {
             case Connected:
+                lock.release();
                 lineUpByServer = false;
                 Log.d(TAG, "State change to Connected happening..");
                 currentState = nextState;
                 listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
                 break;
             case Disconnected:
+                lock.release();
                 lineUpByServer = false;
                 Log.d(TAG, "State change to Disconnected happening...");
                 currentState = nextState;
                 listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, 0);
                 break;
             case LineDown:
+                lock.release();
                 lineUpByServer = false;
                 if (!lineUpByUser && currentState == CWPState.Connected) {
                     if (currentFrequency != messageValue) {
@@ -265,6 +268,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                 }
                 break;
             case LineUp:
+                lock.release();
                 lineUpByServer = true;
                 if (!lineUpByUser) {
                     Log.d(TAG, "State change to LineUp happening..");
@@ -300,8 +304,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                 receiveHandler.post(myProcessor);
             }catch(InterruptedException e){
                 e.printStackTrace();
-            }finally{
-                lock.release();
             }
         }
 
