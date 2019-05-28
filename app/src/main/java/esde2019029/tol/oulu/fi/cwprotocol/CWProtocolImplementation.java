@@ -4,6 +4,7 @@ import android.os.ConditionVariable;
 import android.os.Handler;
 import android.util.Log;
 
+import java.net.SocketException;
 import java.util.Arrays;
 import java.io.IOException;
 import java.io.InputStream;
@@ -83,7 +84,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
            fourBytes = timestamp;
            conditionVariable.open();
            if(currentState == CWPState.LineDown && !lineUpByServer){
-               Log.d(TAG, "lineUp by user happening lol äskdee...");
+               Log.d(TAG, "lineUp by user happening...");
                try{
                    lock.acquire();
                    stateChanged = true;
@@ -333,7 +334,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                     bytesRead += readNow;
                 }
             } while (bytesRead < bytesToRead );
-            return bytesRead
+            return bytesRead;
         }
 
         @Override
@@ -413,12 +414,18 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         private void sendMessage(int msg) throws IOException {
             Log.d(TAG, "Sending msg..." + msg);
-            outBuffer = ByteBuffer.allocate(Integer.SIZE / 8);
+            outBuffer = ByteBuffer.allocate(4);
             outBuffer.order(ByteOrder.BIG_ENDIAN);
             outBuffer.putInt(msg);
             outBuffer.position(0);
             byte[] byteArray = outBuffer.array();
-            nos.write(byteArray);
+            try{
+                nos.write(byteArray);
+            }catch(SocketException e){
+                Log.d(TAG, "Socket exception on long send...");
+                e.printStackTrace();
+            }
+
             nos.flush();
             outBuffer = null;
             Log.d(TAG, "Sent msg");
@@ -431,7 +438,12 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             outBuffer.putShort(msg);
             outBuffer.position(0);
             byte[] byteArray = outBuffer.array();
-            nos.write(byteArray);
+            try{
+                nos.write(byteArray);
+            }catch(SocketException e){
+                Log.d(TAG, "Socket exception on short send...");
+                e.printStackTrace();
+            }
             nos.flush();
             outBuffer = null;
             Log.d(TAG, "Sent short msg");
