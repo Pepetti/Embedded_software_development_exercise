@@ -25,6 +25,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     CWProtocolListener listener;
 
     public static final int DEFAULT_FREQUENCY = -1;
+    public static final int FORBIDDEN_VALUE = -2147483648;
 
     private boolean lineUpByUser;
     private boolean lineUpByServer;
@@ -146,20 +147,23 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     @Override
     public void disconnect() throws IOException, InterruptedException {
         Log.d(TAG, "State change to Disconnected happening..");
-        currentState = CWPState.Disconnected;
-        connectionEstablished = 0L;
-        listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, 0);
-        if (cwpConnectionReader != null) {
-            cwpConnectionReader.stopReading();
-            try {
+        try{
+            if(null != cwpConnectionWriter){
+                cwpConnectionWriter.stopSending();
                 cwpConnectionWriter.join();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                cwpConnectionWriter = null;
             }
-            cwpConnectionReader = null;
+            if(null != cwpConnectionReader){
+                cwpConnectionReader.stopReading();
+                cwpConnectionReader.join();
+                cwpConnectionReader = null;
+            }
+        }catch(InterruptedException e){
+            e.printStackTrace();
         }
-        cwpConnectionWriter.stopSending();
-        cwpConnectionWriter = null;
+        serverAddr = null;
+        serverPort = 0;
+        currentFrequency = DEFAULT_FREQUENCY;
     }
 
     @Override
@@ -289,9 +293,16 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         private void changeProtocolState(CWPState state, int param) throws InterruptedException{
             Log.d(TAG, "Change protocol state to " + state);
-            nextState = state;
-            messageValue = param;
-            receiveHandler.post(myProcessor);
+            try{
+                lock.acquire();
+                nextState = state;
+                messageValue = param;
+                receiveHandler.post(myProcessor);
+            }catch(InterruptedException e){
+                e.printStackTrace();
+            }finally{
+                lock.release();
+            }
         }
 
         void startReading(){
@@ -301,11 +312,20 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         void stopReading() throws IOException, InterruptedException {
             Log.d(TAG, "Disconnecting...");
-            cwpSocket.close();
-            cwpSocket = null;
-            changeProtocolState(CWPState.Disconnected, 0);
-            serverAddr = null;
-            serverPort = -1;
+            running = false;
+            if(null != nos){
+                nos.close();
+                nos = null;
+            }
+            if(null != nis){
+                nis.close();
+                nis = null;
+            }
+            if(null != cwpSocket){
+                cwpSocket.close();
+                cwpSocket = null;
+            }
+            currentState = CWPState.Disconnected;
             Log.d(TAG, "Disconnected");
         }
 
@@ -339,34 +359,41 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         @Override
         public void run(){
-
-            byte[] byteArray = new byte[4];
-            ByteBuffer byteBuffer = ByteBuffer.allocate(Integer.SIZE / 8);
-            byteBuffer.order(ByteOrder.BIG_ENDIAN);
-
-            try {
+            try{
                 doInitialize();
-                changeProtocolState(CWPState.LineDown, currentFrequency);
-
+                int bytesToRead;
+                int bytesRead;
+                byte[] bytes = new byte[BUFFER_LENGTH];
+                ByteBuffer buffer = ByteBuffer.allocate(BUFFER_LENGTH);
+                buffer.order(ByteOrder.BIG_ENDIAN);
                 while(running){
-                    readLoop(byteArray, bytesToRead);
-                    byteBuffer.clear();
-                    byteBuffer.wrap(byteArray);
-                    byteBuffer.position(0);
-                    int intValue = byteBuffer.getInt();
-                    if (intValue < 0){
-                        changeProtocolState(CWPState.LineDown, 0 );
+                    bytesToRead = 4;
+                    Log.d(TAG, "Bytecount excpected: " + bytesToRead);
+                    bytesRead = readLoop(bytes, bytesToRead);
+                    if(bytesRead > 0){
+                        buffer.clear();
+                        buffer.put(bytes, 0, bytesRead);
+                        buffer.position(0);
+                        int value = buffer.getInt();
+                        if(value >= 0){
+                            changeProtocolState(CWPState.LineUp, value);
+                            bytesToRead = 2;
+                            bytesRead = readLoop(bytes, bytesToRead);
+                            if(bytesRead > 0){
+                                buffer.clear();
+                                buffer.put(bytes, 0, bytesRead);
+                                buffer.position(0);
+                                short shortValue = buffer.getShort();
+                                changeProtocolState(CWPState.LineDown, shortValue);
+                            }
+                        }else if(value != FORBIDDEN_VALUE){
+                            changeProtocolState(CWPState.LineDown, value);
+                        }
                     }
-                    else if (intValue > 0){
-                        changeProtocolState(CWPState.LineUp, 0);
-                        readLoop(byteArray, 2);
-                        changeProtocolState(CWPState.LineDown,  0);
-                    }
-
                 }
-            } catch (InterruptedException e) {
+            }catch(IOException e){
                 e.printStackTrace();
-            } catch (IOException e) {
+            }catch(InterruptedException e){
                 e.printStackTrace();
             }
 
@@ -381,6 +408,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         void startSending(){
             running = true;
+            setName("CWPWriter");
             start();
         }
 
@@ -394,19 +422,23 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             while (running){
                 try {
                     conditionVariable.block();
+                    lock.acquire();
                     if (fourBytes != 0) {
                         sendMessage(fourBytes);
                         fourBytes = 0;
-                        conditionVariable.close();
                     }
                     else if (twoBytes > 0){
                         sendMessage(twoBytes);
                         twoBytes = 0;
-                        conditionVariable.close();
                     }
 
                 } catch (IOException e) {
                     e.printStackTrace();
+                } catch (InterruptedException e2){
+                    e2.printStackTrace();
+                }finally{
+                    conditionVariable.close();
+                    lock.release();
                 }
 
             }
