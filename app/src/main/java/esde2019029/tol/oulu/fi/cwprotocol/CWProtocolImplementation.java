@@ -4,6 +4,7 @@ import android.os.ConditionVariable;
 import android.os.Handler;
 import android.util.Log;
 
+import java.util.Arrays;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -12,7 +13,6 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.sql.Timestamp;
 import java.util.Observer;
 import java.util.concurrent.Semaphore;
 
@@ -280,7 +280,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         private static final String TAG = "CWPReader";
 
         int bytesToRead = 4;
-        int bytesRead = 0;
 
         CWPConnectionReader(Runnable processor) {
             myProcessor = processor;
@@ -323,15 +322,18 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         }
 
         private int readLoop(byte [] bytes, int bytesToRead) throws IOException {
-            int readNow;
-            do{
-               readNow = nis.read(bytes, bytesRead, bytesToRead-bytesRead);
-            } while (readNow != -1);
-            if (readNow == -1) {
-                throw new IOException("Read -1 from stream");
-            }
-
-            return readNow;
+            int bytesRead = 0;
+            do {
+                Arrays.fill(bytes, (byte) 0);
+                int readNow = nis.read(bytes, bytesRead, bytesToRead - bytesRead);
+                Log.d(TAG, "Bytecount Read " + readNow);
+                if (readNow == -1) {
+                    throw new IOException("Read -1 from stream");
+                } else {
+                    bytesRead += readNow;
+                }
+            } while (bytesRead < bytesToRead );
+            return bytesRead
         }
 
         @Override
