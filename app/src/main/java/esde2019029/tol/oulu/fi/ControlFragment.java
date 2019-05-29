@@ -74,14 +74,18 @@ public class ControlFragment extends Fragment implements Observer {
             @Override
             public void onClick(View v) {
                 EditText editText = (EditText) view.findViewById(R.id.editFrequency);
+                
                 try{
                     freqFromEdit = Integer.parseInt(editText.getText().toString());
                 }catch(NumberFormatException e){
                     e.printStackTrace();
                     freqFromEdit = 1;
                 }finally{
-                    freqFromEdit *= -1;
+                    if(freqFromEdit > 0){
+                        freqFromEdit *= -1;
+                    }
                 }
+
                 SharedPreferences.Editor edit = preferences.edit();
                 edit.putString("key_editable_frequency", Integer.toString(freqFromEdit) );
                 edit.commit();
