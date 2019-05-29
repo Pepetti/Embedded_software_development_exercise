@@ -310,6 +310,8 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         }
 
+        //Changes the protocol state
+        //Changes the protocol state
         private void changeProtocolState(CWPState state, int param) throws InterruptedException{
             Log.d(TAG, "Change protocol state to " + state);
             try{
