@@ -74,7 +74,7 @@ public class ControlFragment extends Fragment implements Observer {
             @Override
             public void onClick(View v) {
                 EditText editText = (EditText) view.findViewById(R.id.editFrequency);
-                
+
                 try{
                     freqFromEdit = Integer.parseInt(editText.getText().toString());
                 }catch(NumberFormatException e){
