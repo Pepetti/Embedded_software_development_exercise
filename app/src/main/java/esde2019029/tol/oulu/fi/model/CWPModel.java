@@ -9,11 +9,13 @@ import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolImplementation;
 import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolListener;
 
 public class CWPModel extends Observable implements CWPMessaging, CWPControl, CWProtocolListener {
-    CWProtocolImplementation cwProtocolImplementation = new CWProtocolImplementation(this);
+    private CWProtocolImplementation cwProtocolImplementation = new CWProtocolImplementation(this);
 
     @Override
     public void connect(String serverAddr, int serverPort, int frequency) throws IOException {
         cwProtocolImplementation.connect(serverAddr, serverPort, frequency);
+        Signaller s = new Signaller();
+        addObserver(s);
         setChanged();
         notifyObservers(cwProtocolImplementation.getCurrentState());
     }

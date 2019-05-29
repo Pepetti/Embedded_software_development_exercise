@@ -44,7 +44,7 @@ public class ControlFragment extends Fragment implements Observer {
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
         final String server = preferences.getString("key_server_address", "hölkynkölkyn.com");
-        final int frequency = Integer.parseInt(preferences.getString("key_default_frequency", "-1"));
+        final int frequency = Integer.parseInt(preferences.getString("key_editable_frequency", "-1"));
         final View view = inflater.inflate(R.layout.fragment_control, container, false);
         ToggleButton toggleButton = (ToggleButton) view.findViewById(R.id.CWPServerConnection);
 
@@ -74,8 +74,14 @@ public class ControlFragment extends Fragment implements Observer {
             @Override
             public void onClick(View v) {
                 EditText editText = (EditText) view.findViewById(R.id.editFrequency);
-                freqFromEdit = Integer.parseInt(editText.getText().toString());
-                freqFromEdit *= -1;
+                try{
+                    freqFromEdit = Integer.parseInt(editText.getText().toString());
+                }catch(NumberFormatException e){
+                    e.printStackTrace();
+                    freqFromEdit = 1;
+                }finally{
+                    freqFromEdit *= -1;
+                }
                 SharedPreferences.Editor edit = preferences.edit();
                 edit.putString("key_editable_frequency", Integer.toString(freqFromEdit) );
                 edit.commit();
