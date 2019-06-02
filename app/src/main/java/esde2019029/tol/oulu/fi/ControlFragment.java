@@ -43,22 +43,30 @@ public class ControlFragment extends Fragment implements Observer {
                              Bundle savedInstanceState) {
 
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
-        final String server = preferences.getString("key_server_address", "hölkynkölkyn.com");
-        final int frequency = Integer.parseInt(preferences.getString("key_editable_frequency", "-1"));
         final View view = inflater.inflate(R.layout.fragment_control, container, false);
-        ToggleButton toggleButton = (ToggleButton) view.findViewById(R.id.CWPServerConnection);
 
-        toggleButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
+        ToggleButton connectionButton = (ToggleButton) view.findViewById(R.id.CWPServerConnection);
+        connectionButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 if (isChecked) {
-                    try {
-                        cwpControl.connect(server, 20000, frequency);
-                    } catch (IOException e) {
-                        e.printStackTrace();
+                    Toast.makeText(getActivity().getApplicationContext(), "Initializing connection...", Toast.LENGTH_SHORT).show();
+                    String server = preferences.getString("key_server_address", "defValue");
+                    String serverArray[] = server.split(":");
+                    int port = 0;
+                    if (serverArray.length == 2) {
+                        port = Integer.valueOf(serverArray[1]);
+                        server = serverArray[0];
+                        int frequency = Integer.parseInt(preferences.getString("key_default_frequency", "defValue"));
+                        try {
+                            cwpControl.connect(server, port, frequency);
+                        } catch (IOException e) {
+                            e.printStackTrace();
+                        }
                     }
-                }else{
+                }else if (!isChecked){
                     try {
+                        Toast.makeText(getActivity().getApplicationContext(),"Disconnecting...", Toast.LENGTH_SHORT).show();
                         cwpControl.disconnect();
                     } catch (IOException e) {
                         e.printStackTrace();
@@ -68,39 +76,25 @@ public class ControlFragment extends Fragment implements Observer {
                 }
             }
         });
-
         Button freqButton = view.findViewById(R.id.freqChangeButton);
         freqButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                Toast.makeText(getActivity().getApplicationContext(),"Changing frequency...", Toast.LENGTH_SHORT).show();
                 EditText editText = (EditText) view.findViewById(R.id.editFrequency);
-
-                try{
-                    freqFromEdit = Integer.parseInt(editText.getText().toString());
-                }catch(NumberFormatException e){
-                    e.printStackTrace();
-                    freqFromEdit = 1;
-                }finally{
-                    if(freqFromEdit > 0){
-                        freqFromEdit *= -1;
-                    }
-                }
-
                 SharedPreferences.Editor edit = preferences.edit();
-                edit.putString("key_editable_frequency", Integer.toString(freqFromEdit) );
-                edit.commit();
+
+                freqFromEdit = Integer.parseInt(editText.getText().toString());
                 if (freqFromEdit != cwpControl.frequency()){
                     try {
                         cwpControl.setFrequency(freqFromEdit);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
-                    try {
-                        cwpControl.connect(server, 20000, frequency);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
                 }
+                edit.putString("key_default_frequency", Integer.toString(cwpControl.frequency()) );
+                edit.commit();
+                Toast.makeText(getActivity().getApplicationContext(),"Frequency changed", Toast.LENGTH_SHORT).show();
             }
         });
         return view;
@@ -132,7 +126,7 @@ public class ControlFragment extends Fragment implements Observer {
             Toast.makeText(getActivity().getApplicationContext(), getString(R.string.disconnected), Toast.LENGTH_SHORT).show();
         }
         if (arg == CWProtocolListener.CWPEvent.EChangedFrequency) {
-            Toast.makeText(getActivity().getApplicationContext(), getString(R.string.frequency_change) + freqFromEdit, Toast.LENGTH_SHORT).show();
+            Toast.makeText(getActivity().getApplicationContext(), getString(R.string.frequency_change) + cwpControl.frequency(), Toast.LENGTH_SHORT).show();
         }
     }
 }

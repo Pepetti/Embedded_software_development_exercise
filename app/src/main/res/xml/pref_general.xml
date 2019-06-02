@@ -5,7 +5,7 @@
 
     <EditTextPreference
         android:title="@string/Server_address"
-        android:defaultValue="true"
+        android:defaultValue="www.opimobi.com:20000"
         android:key="key_server_address"
         android:selectAllOnFocus="true"
         android:singleLine="true"
@@ -13,8 +13,8 @@
 
     <EditTextPreference
         android:title="@string/Frequency"
-        android:defaultValue="true"
-        android:inputType="number"
+        android:defaultValue="-1"
+        android:inputType="numberSigned"
         android:key="key_default_frequency"
         android:selectAllOnFocus="true"
         android:singleLine="true" />
