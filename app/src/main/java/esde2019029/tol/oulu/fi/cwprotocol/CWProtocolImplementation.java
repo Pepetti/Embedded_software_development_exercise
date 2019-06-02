@@ -473,7 +473,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                 Log.d(TAG, "Socket exception on long send...");
                 e.printStackTrace();
             }
-
             nos.flush();
             outBuffer = null;
             Log.d(TAG, "Sent msg");
@@ -481,7 +480,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         private void sendMessage(short msg) throws IOException{
             Log.d(TAG, "Sending short msg..." + msg);
-            outBuffer = ByteBuffer.allocate(Integer.SIZE / 4);
+            outBuffer = ByteBuffer.allocate(2);
             outBuffer.order(ByteOrder.BIG_ENDIAN);
             outBuffer.putShort(msg);
             outBuffer.position(0);
