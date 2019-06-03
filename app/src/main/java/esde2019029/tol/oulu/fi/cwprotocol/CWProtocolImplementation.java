@@ -32,7 +32,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     private volatile CWPState currentState = CWPState.Disconnected;
     private CWPState nextState = currentState;
     private int currentFrequency = DEFAULT_FREQUENCY;
-    private CWPConnectionReader connection = null;
     private Handler receiveHandler = new Handler();
     private int messageValue = 0;
     private static final String TAG = "CWPImplementation";
@@ -54,7 +53,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
     private Semaphore lock = new Semaphore(1);
 
-
     public CWPState getCurrentState(){
         return currentState;
     }
@@ -64,20 +62,17 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     }
 
     @Override
-    public void addObserver(Observer observer) {
-
-    }
+    public void addObserver(Observer observer) { }
 
     @Override
-    public void deleteObserver(Observer observer) {
-
-    }
+    public void deleteObserver(Observer observer) { }
 
     @Override
     public void lineUp() throws IOException {
-        Log.d(TAG, "lineUp happening...");
+        Log.d(TAG, "lineUp method started...");
         boolean stateChanged = false;
-        if (!lineUpByUser && (currentState == CWPState.LineUp || currentState == CWPState.LineDown )) {
+        if (!lineUpByUser && (currentState == CWPState.LineUp || currentState == CWPState.LineDown )){
+            Log.d(TAG, "lineUp by server happening...");
            Long tempStamp = System.currentTimeMillis() - connectionEstablished;
            timestamp = tempStamp.intValue();
            fourBytes = timestamp;
@@ -85,6 +80,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
            if(currentState == CWPState.LineDown && !lineUpByServer){
                Log.d(TAG, "lineUp by user happening...");
                try{
+                   Log.d(TAG, "Acquiring lineUp lock...");
                    lock.acquire();
                    stateChanged = true;
                    currentState = CWPState.LineUp;
@@ -92,7 +88,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                    e.printStackTrace();
                }finally{
                    lock.release();
-                   Log.d(TAG, "lineUp lock released...");
+                   Log.d(TAG, "lineUp lock released");
                }
            }
            lineUpByUser = true;
@@ -101,7 +97,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
            }
         }
     }
-
 
     @Override
     public void lineDown() throws IOException {
@@ -114,6 +109,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             if(!lineUpByServer){
                 Log.d(TAG, "lineDown happening by user...");
                 try{
+                    Log.d(TAG, "Acquiring lineDown lock...");
                     lock.acquire();
                     currentState = CWPState.LineDown;
                     stateChanged = true;
@@ -147,12 +143,12 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     public void disconnect() throws IOException, InterruptedException {
         Log.d(TAG, "State change to Disconnected happening..");
         try{
-            if(null != cwpConnectionWriter){
+            if(cwpConnectionWriter != null){
                 cwpConnectionWriter.stopSending();
                 cwpConnectionWriter.join();
                 cwpConnectionWriter = null;
             }
-            if(null != cwpConnectionReader){
+            if(cwpConnectionReader != null){
                 cwpConnectionReader.stopReading();
                 cwpConnectionReader.join();
                 cwpConnectionReader = null;
@@ -163,6 +159,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         serverAddr = null;
         serverPort = 0;
         currentFrequency = DEFAULT_FREQUENCY;
+        Log.d(TAG, "Disconnected");
     }
 
     @Override
@@ -186,7 +183,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     @Override
     public void setFrequency(int frequency) throws IOException {
         if (currentFrequency != frequency && frequency != FORBIDDEN_VALUE) {
-            Log.d(TAG, "Start frequency change...");
+            Log.d(TAG, "Starting frequency change...");
             if (frequency > 0) {
                 currentFrequency = -frequency;
             } else if (frequency == 0) {
@@ -207,7 +204,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
     private void sendFrequency() throws IOException{
         boolean didIt = false;
         try{
-            Log.d(TAG, "Attempting to send frequency...");
+            Log.d(TAG, "Acquiring sendFrequency lock...");
             lock.acquire();
             if(currentState == CWPState.LineDown){
                 Log.d(TAG, "Sending frequency...");
@@ -222,7 +219,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             e.printStackTrace();
         }finally{
             lock.release();
-            Log.d(TAG, "Lock released...");
+            Log.d(TAG, "Lock released");
         }
         if(didIt){
             listener.onEvent(CWProtocolListener.CWPEvent.EConnected, 0);
@@ -238,13 +235,16 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                 currentState = nextState;
                 lineUpByServer = false;
                 lock.release();
+                Log.d(TAG, "Lock released");
                 listener.onEvent(CWProtocolListener.CWPEvent.EConnected, tempMSG);
+                Log.d(TAG, "State is connected");
                 break;
             case Disconnected:
                 Log.d(TAG, "State change to Disconnected happening...");
                 currentState = nextState;
                 lineUpByServer = false;
                 lock.release();
+                Log.d(TAG, "Lock released");
                 try {
                     disconnect();
                 } catch (InterruptedException e) {
@@ -253,11 +253,13 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                     e.printStackTrace();
                 }
                 listener.onEvent(CWProtocolListener.CWPEvent.EDisconnected, tempMSG);
+                Log.d(TAG, "State is disconnected");
                 break;
             case LineDown:
                 if (currentState == CWPState.Connected) {
                     currentState = nextState;
                     lock.release();
+                    Log.d(TAG, "Lock released");
                     Log.d(TAG, "Frequency change happening...");
                     if (currentFrequency != tempMSG) {
                         try {
@@ -267,17 +269,23 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                         }
                     } else {
                         listener.onEvent(CWProtocolListener.CWPEvent.EChangedFrequency, tempMSG);
+                        Log.d(TAG, "Frequency changed");
                     }
                 } else {
                     lineUpByServer = false;
                     if (!lineUpByUser) {
                         currentState = nextState;
                         lock.release();
+                        Log.d(TAG, "Lock released");
                         Log.d(TAG, "State change to LineDown happening...");
                         listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, tempMSG);
+                        Log.d(TAG, "State is lineDown");
                     } else {
                         lock.release();
+                        Log.d(TAG, "Lock released");
+                        Log.d(TAG, "State change to LineDown happening...");
                         listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
+                        Log.d(TAG, "State is lineDown");
                     }
                 }
                 break;
@@ -287,14 +295,19 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                     Log.d(TAG, "State change to LineUp happening..");
                     currentState = nextState;
                     lock.release();
+                    Log.d(TAG, "Lock released");
                     listener.onEvent(CWProtocolListener.CWPEvent.ELineUp, tempMSG);
+                    Log.d(TAG, "State is lineUp");
                 } else {
                     lock.release();
+                    Log.d(TAG, "Lock released");
                     listener.onEvent(CWProtocolListener.CWPEvent.EServerStateChange, lineUpByServer ? 1 : 0);
+                    Log.d(TAG, "Server state changed");
                 }
                 break;
             default:
                 lock.release();
+                Log.d(TAG, "Lock released");
         }
     }
 
@@ -309,11 +322,11 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         CWPConnectionReader(Runnable processor) {
             myProcessor = processor;
-
         }
 
         private void changeProtocolState(CWPState state, int param) throws InterruptedException{
             Log.d(TAG, "Change protocol state to " + state);
+            Log.d(TAG, "Acquiring lock...");
             lock.acquire();
             nextState = state;
             messageValue = param;
@@ -328,19 +341,19 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
         void stopReading() throws IOException, InterruptedException {
             Log.d(TAG, "Disconnecting...");
             running = false;
-            if(null != nos){
+            if(nos != null){
                 nos.close();
                 nos = null;
             }
-            if(null != nis){
+            if(nis != null){
                 nis.close();
                 nis = null;
             }
-            if(null != cwpSocket){
+            if(cwpSocket != null){
                 cwpSocket.close();
                 cwpSocket = null;
             }
-            currentState = CWPState.Disconnected;
+            changeProtocolState(CWPState.Disconnected, 0);
             Log.d(TAG, "Disconnected");
         }
 
@@ -403,18 +416,18 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                                 changeProtocolState(CWPState.LineDown, shortValue);
                             }
                         }else if(value != FORBIDDEN_VALUE){
-                            changeProtocolState(CWPState.LineDown, value);
+                            changeProtocolState(CWPState.LineDown, value); //value == frequency from server
                         }
                     }
                 }
             }catch(IOException e){
+                Log.d(TAG, "IOException in reader thread");
                 e.printStackTrace();
             }catch(InterruptedException e){
+                Log.d(TAG, "InterruptedException in reader thread");
                 e.printStackTrace();
             }
-
         }
-
     }
 
     private class CWPConnectionWriter extends Thread{
@@ -424,7 +437,6 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
 
         void startSending(){
             running = true;
-            setName("CWPWriter");
             start();
         }
 
@@ -438,6 +450,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             while (running){
                 try {
                     conditionVariable.block();
+                    Log.d(TAG, "Aqcuiring lock...");
                     lock.acquire();
                     if (fourBytes != 0) {
                         sendMessage(fourBytes);
@@ -447,14 +460,16 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                         sendMessage(twoBytes);
                         twoBytes = 0;
                     }
-
                 } catch (IOException e) {
+                    Log.d(TAG, "IOException in writer thread");
                     e.printStackTrace();
                 } catch (InterruptedException e2){
+                    Log.d(TAG, "InterruptedException in writer thread");
                     e2.printStackTrace();
                 }finally{
                     conditionVariable.close();
                     lock.release();
+                    Log.d(TAG, "Lock released");
                 }
 
             }
@@ -470,7 +485,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             try{
                 nos.write(byteArray);
             }catch(SocketException e){
-                Log.d(TAG, "Socket exception on long send...");
+                Log.d(TAG, "Socket exception on long send");
                 e.printStackTrace();
             }
             nos.flush();
@@ -488,14 +503,12 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
             try{
                 nos.write(byteArray);
             }catch(SocketException e){
-                Log.d(TAG, "Socket exception on short send...");
+                Log.d(TAG, "Socket exception on short send");
                 e.printStackTrace();
             }
             nos.flush();
             outBuffer = null;
             Log.d(TAG, "Sent short msg");
         }
-
     }
-
 }

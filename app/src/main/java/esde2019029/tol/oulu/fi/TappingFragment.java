@@ -4,6 +4,7 @@ import android.annotation.SuppressLint;
 import android.content.Context;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.View;
@@ -26,6 +27,7 @@ public class TappingFragment extends Fragment implements Observer {
     private TextView userLine;
     private TextView serverLine;
     private View view;
+    private static final String TAG = "TappingFragment";
 
     public TappingFragment() {}
 
@@ -51,6 +53,7 @@ public class TappingFragment extends Fragment implements Observer {
                     try {
                         cwpMessaging.lineUp();
                     } catch (IOException e) {
+                        Log.d(TAG, "IOException while lineUp...");
                         e.printStackTrace();
                     }
                     return true;
@@ -59,6 +62,7 @@ public class TappingFragment extends Fragment implements Observer {
                     try {
                         cwpMessaging.lineDown();
                     } catch (IOException e) {
+                        Log.d(TAG, "IOException while lineDown...");
                         e.printStackTrace();
                     }
                     return true;
@@ -79,7 +83,6 @@ public class TappingFragment extends Fragment implements Observer {
         cwpProvider = (CWPProvider) getActivity();
         cwpMessaging = cwpProvider.getMessaging();
         cwpMessaging.addObserver(this);
-
     }
 
     @Override

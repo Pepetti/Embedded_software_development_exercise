@@ -29,20 +29,8 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
     @Override
     public CWPControl getCWPControl() { return cwpModel; }
 
-
-    /**
-     * The {@link android.support.v4.view.PagerAdapter} that will provide
-     * fragments for each of the sections. We use a
-     * {@link FragmentPagerAdapter} derivative, which will keep every
-     * loaded fragment in memory. If this becomes too memory intensive, it
-     * may be best to switch to a
-     * {@link android.support.v4.app.FragmentStatePagerAdapter}.
-     */
     private SectionsPagerAdapter mSectionsPagerAdapter;
 
-    /**
-     * The {@link ViewPager} that will host the section contents.
-     */
     private ViewPager mViewPager;
 
     @Override
@@ -64,7 +52,6 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
         mViewPager = (ViewPager) findViewById(R.id.container);
         mViewPager.setAdapter(mSectionsPagerAdapter);
         cwpModel = new CWPModel();
-
     }
 
     @Override
@@ -87,14 +74,8 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
             startActivity(intentObject);
             return true;
         }
-
         return super.onOptionsItemSelected(item);
     }
-
-    /**
-     * A {@link FragmentPagerAdapter} that returns a fragment corresponding to
-     * one of the sections/tabs/pages.
-     */
 
     public class SectionsPagerAdapter extends FragmentPagerAdapter {
 
@@ -103,7 +84,6 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
         }
         @Override
         public Fragment getItem(int position) {
-
             // getItem is called to instantiate the fragment for the given page.
             if (position == 0) {
                  return new TappingFragment();
@@ -112,7 +92,6 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
                 return new ControlFragment();
             }
             return null;
-
         }
 
         @Override
@@ -123,12 +102,10 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
 
         @Override
         public CharSequence getPageTitle(int position) {
-
             if (position == 0){
                 return ("Tapping");
             }
             return null;
-
         }
     }
 
@@ -136,5 +113,4 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
     protected void onDestroy() {
         super.onDestroy();
     }
-
 }
