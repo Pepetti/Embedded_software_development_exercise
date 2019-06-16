@@ -8,10 +8,12 @@ import java.util.Observable;
 import java.util.Observer;
 
 import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolListener;
+import esde2019029.tol.oulu.fi.cwprotocol.CWPMessaging;
 
 
 public class Signaller implements Observer {
 
+    private CWPMessaging cwpMessaging;
     private ToneGenerator t = new ToneGenerator(AudioManager.STREAM_DTMF, 100);
     private static final String TAG = "Signaller";
 
@@ -25,11 +27,14 @@ public class Signaller implements Observer {
 
     @Override
     public void update(Observable o, Object arg) {
-        if(arg == CWProtocolListener.CWPEvent.ELineUp){
+        if(arg == CWProtocolListener.CWPEvent.ELineUp) {
             Log.d(TAG, "Start audio...");
             start();
         }
-        if(arg == CWProtocolListener.CWPEvent.ELineDown){
+        else if(arg == CWProtocolListener.CWPEvent.ELineDown){
+            stop();
+        }
+        else if (arg == CWProtocolListener.CWPEvent.EDisconnected){
             stop();
         }
     }

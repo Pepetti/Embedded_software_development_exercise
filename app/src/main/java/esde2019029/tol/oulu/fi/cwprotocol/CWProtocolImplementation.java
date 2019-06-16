@@ -284,7 +284,7 @@ public class CWProtocolImplementation implements CWPControl, CWPMessaging, Runna
                         lock.release();
                         Log.d(TAG, "Lock released");
                         Log.d(TAG, "State change to LineDown happening...");
-                        listener.onEvent(CWProtocolListener.CWPEvent.ELineDown, 0);
+                        listener.onEvent(CWProtocolListener.CWPEvent.EServerStateChange, lineUpByServer ? 1 : 0);
                         Log.d(TAG, "State is lineDown");
                     }
                 }

@@ -16,16 +16,11 @@ public class CWPModel extends Observable implements CWPMessaging, CWPControl, CW
         cwProtocolImplementation.connect(serverAddr, serverPort, frequency);
         Signaller s = new Signaller();
         addObserver(s);
-        setChanged();
-        notifyObservers(cwProtocolImplementation.getCurrentState());
     }
 
     @Override
     public void disconnect() throws IOException, InterruptedException {
         cwProtocolImplementation.disconnect();
-        setChanged();
-        notifyObservers(cwProtocolImplementation.getCurrentState());
-
     }
 
     @Override
@@ -39,15 +34,11 @@ public class CWPModel extends Observable implements CWPMessaging, CWPControl, CW
     @Override
     public void lineUp() throws IOException {
         cwProtocolImplementation.lineUp();
-        setChanged();
-        notifyObservers(cwProtocolImplementation.getCurrentState());
     }
 
     @Override
     public void lineDown() throws IOException {
         cwProtocolImplementation.lineDown();
-        setChanged();
-        notifyObservers(cwProtocolImplementation.getCurrentState());
     }
 
     @Override

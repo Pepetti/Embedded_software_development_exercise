@@ -105,6 +105,9 @@ public class MainActivity extends AppCompatActivity implements CWPProvider {
             if (position == 0){
                 return ("Tapping");
             }
+            if (position == 1){
+                return ("Control");
+            }
             return null;
         }
     }

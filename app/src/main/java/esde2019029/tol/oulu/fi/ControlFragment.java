@@ -26,6 +26,8 @@ public class ControlFragment extends Fragment implements Observer {
     private CWPControl cwpControl;
     private static final String TAG = "ControlFragment";
     int freqFromEdit;
+    ToggleButton connectionButton;
+    EditText editText;
 
     public ControlFragment() {
         // Required empty public constructor
@@ -45,7 +47,7 @@ public class ControlFragment extends Fragment implements Observer {
         final SharedPreferences preferences = PreferenceManager.getDefaultSharedPreferences(getContext());
         final View view = inflater.inflate(R.layout.fragment_control, container, false);
 
-        ToggleButton connectionButton = (ToggleButton) view.findViewById(R.id.CWPServerConnection);
+        connectionButton = (ToggleButton) view.findViewById(R.id.CWPServerConnection);
         connectionButton.setOnCheckedChangeListener(new CompoundButton.OnCheckedChangeListener() {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
@@ -60,12 +62,14 @@ public class ControlFragment extends Fragment implements Observer {
                         int frequency = Integer.parseInt(preferences.getString("key_default_frequency", "defValue"));
                         try {
                             cwpControl.connect(server, port, frequency);
+                            editText = (EditText) view.findViewById(R.id.editFrequency);
+                            editText.setText(Integer.toString(cwpControl.frequency()));
                         } catch (IOException e) {
                             Log.d(TAG, "IOException while connecting...");
                             e.printStackTrace();
                         }
                     }
-                }else if (!isChecked){
+                }else if (!isChecked ){
                     try {
                         Toast.makeText(getActivity().getApplicationContext(),"Disconnecting...", Toast.LENGTH_LONG).show();
                         cwpControl.disconnect();
@@ -79,12 +83,13 @@ public class ControlFragment extends Fragment implements Observer {
                 }
             }
         });
+
         Button freqButton = view.findViewById(R.id.freqChangeButton);
         freqButton.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 Toast.makeText(getActivity().getApplicationContext(),"Changing frequency...", Toast.LENGTH_LONG).show();
-                EditText editText = (EditText) view.findViewById(R.id.editFrequency);
+                editText = (EditText) view.findViewById(R.id.editFrequency);
                 SharedPreferences.Editor edit = preferences.edit();
                 if (editText.getText().toString().isEmpty() || editText.length() == 0 || editText.equals("")){
                     freqFromEdit = 0;
@@ -132,6 +137,7 @@ public class ControlFragment extends Fragment implements Observer {
         }
         if (arg == CWProtocolListener.CWPEvent.EDisconnected) {
             Toast.makeText(getActivity().getApplicationContext(), getString(R.string.disconnected), Toast.LENGTH_LONG).show();
+            connectionButton.setChecked(false);
         }
         if (arg == CWProtocolListener.CWPEvent.EChangedFrequency) {
             Toast.makeText(getActivity().getApplicationContext(), getString(R.string.frequency_change) + cwpControl.frequency(), Toast.LENGTH_LONG).show();

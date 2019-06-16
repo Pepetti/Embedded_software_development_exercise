@@ -22,7 +22,7 @@ import esde2019029.tol.oulu.fi.cwprotocol.CWProtocolListener;
 
 public class TappingFragment extends Fragment implements Observer {
 
-    private ImageView hall9000_offline;
+    private ImageView imageView;
     private CWPMessaging cwpMessaging;
     private TextView userLine;
     private TextView serverLine;
@@ -43,13 +43,14 @@ public class TappingFragment extends Fragment implements Observer {
 
         // Inflate the layout for this fragment
         view = inflater.inflate(R.layout.fragment_tapping, container, false);
-        hall9000_offline = (ImageView) view.findViewById(R.id.hall9000_offline);
+        imageView = view.findViewById(R.id.hall9000_offline);
+        userLine = view.findViewById(R.id.userLineState);
 
-        hall9000_offline.setOnTouchListener(new View.OnTouchListener() {
-
+        imageView.setOnTouchListener(new View.OnTouchListener() {
             @Override
             public boolean onTouch(View view, MotionEvent event) {
                 if (event.getActionMasked() == MotionEvent.ACTION_DOWN) {
+                    userLine.setText(R.string.LineUp);
                     try {
                         cwpMessaging.lineUp();
                     } catch (IOException e) {
@@ -58,7 +59,8 @@ public class TappingFragment extends Fragment implements Observer {
                     }
                     return true;
                 }
-                else if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_CANCEL) {
+                else if (event.getActionMasked() == MotionEvent.ACTION_UP || event.getActionMasked() == MotionEvent.ACTION_CANCEL ) {
+                    userLine.setText(R.string.LineDown);
                     try {
                         cwpMessaging.lineDown();
                     } catch (IOException e) {
@@ -66,12 +68,10 @@ public class TappingFragment extends Fragment implements Observer {
                         e.printStackTrace();
                     }
                     return true;
+                }else{
+                return false;
                 }
-                else {
-                    return false;
-                }
-            }
-        });
+            }});
         return view;
     }
 
@@ -95,32 +95,25 @@ public class TappingFragment extends Fragment implements Observer {
 
     @Override
     public void update (Observable obs, Object arg) {
+        serverLine = view.findViewById(R.id.serverLineState);
 
-        if (arg == CWProtocolListener.CWPEvent.ELineUp) {
-            hall9000_offline.setImageResource(R.mipmap.hal9000_up);
-            userLine = view.findViewById(R.id.userLineState);
-            userLine.setText(R.string.LineUp);
-
-        } else if (arg == CWProtocolListener.CWPEvent.ELineDown) {
-            hall9000_offline.setImageResource(R.mipmap.hal9000_down);
-            userLine = view.findViewById(R.id.userLineState);
-            userLine.setText(R.string.LineDown);
-
-        } else if (arg == CWProtocolListener.CWPEvent.EDisconnected) {
-            hall9000_offline.setImageResource(R.mipmap.hal9000_offline);
-            userLine = view.findViewById(R.id.userLineState);
-            userLine.setText(R.string.LineDown);
-        } else if (arg == CWProtocolListener.CWPEvent.EConnected) {
-            hall9000_offline.setImageResource(R.mipmap.hal9000_offline);
-
+        if (arg == CWProtocolListener.CWPEvent.ELineUp){
+            imageView.setImageResource(R.mipmap.hal9000_up);
+        }
+        else if (arg == CWProtocolListener.CWPEvent.ELineDown){
+            imageView.setImageResource(R.mipmap.hal9000_down);
+        }
+        else if (arg == CWProtocolListener.CWPEvent.EDisconnected) {
+            imageView.setImageResource(R.mipmap.hal9000_offline);
+        }
+        else if (arg == CWProtocolListener.CWPEvent.EConnected) {
+            imageView.setImageResource(R.mipmap.hal9000_down);
         }
 
         if (cwpMessaging.serverSetLineUp()){
-            serverLine = view.findViewById(R.id.serverLineState);
             serverLine.setText(R.string.LineUp);
         }
         else if (!cwpMessaging.serverSetLineUp()){
-            serverLine = view.findViewById(R.id.serverLineState);
             serverLine.setText(R.string.LineDown);
         }
     }
